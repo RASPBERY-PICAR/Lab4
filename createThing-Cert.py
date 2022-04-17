@@ -63,5 +63,5 @@ def createCertificate():
     )
 
 
-thingClient = boto3.client('iot')
+thingClient = boto3.client('iot', region_name='us-east-1')
 createThing()
