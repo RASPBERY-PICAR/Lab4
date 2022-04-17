@@ -21,6 +21,7 @@ import uuid
 import json
 import logging
 import argparse
+import pandas as pd
 from AWSIoTPythonSDK.core.greengrass.discovery.providers import DiscoveryInfoProvider
 from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCore
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
@@ -55,11 +56,15 @@ parser.add_argument("-t", "--topic", action="store", dest="topic",
                     default="sdk/test/Python", help="Targeted topic")
 parser.add_argument("-m", "--mode", action="store", dest="mode", default="both",
                     help="Operation modes: %s" % str(AllowedActions))
-parser.add_argument("-M", "--message", action="store", dest="message", default="Hello World!",
-                    help="Message to publish")
+# parser.add_argument("-M", "--message", action="store", dest="message", default="Hello World!",
+#                     help="Message to publish")
 # --print_discover_resp_only used for delopyment testing. The test run will return 0 as long as the SDK installed correctly.
 parser.add_argument("-p", "--print_discover_resp_only",
                     action="store_true", dest="print_only", default=False)
+
+# Modified to point to a CSV file. We will transmit one row at a time of this file.
+parser.add_argument("-d", "--data", action="store",
+                    dest="data", default=None, help="Path to CSV file")
 
 args = parser.parse_args()
 host = args.host
@@ -113,6 +118,7 @@ discoveryInfoProvider.configureCredentials(
 discoveryInfoProvider.configureTimeout(10)  # 10 sec
 
 retryCount = MAX_DISCOVERY_RETRIES if not print_only else 1
+# retryCount = MAX_DISCOVERY_RETRIES
 discovered = False
 groupCA = None
 coreInfo = None
@@ -192,12 +198,20 @@ if args.mode == 'both' or args.mode == 'subscribe':
     myAWSIoTMQTTClient.subscribe(topic, 0, None)
 time.sleep(2)
 
+if args.mode == 'both' or args.mode == 'publish':
+    data_file = pd.read_csv(args.data)
+
+# import pandas as pd
+# data_file = pd.read_csv("data2/vehicle0.csv")
+# print(len(data_file))
+# print(data_file.loc[0]["vehicle_id"])
+
 loopCount = 0
-while True:
+len = len(data_file)
+while loopCount < len:
     if args.mode == 'both' or args.mode == 'publish':
-        message = {}
-        message['message'] = args.message
-        message['sequence'] = loopCount
+        message = data_file.loc[loopCount].to_dict()
+        # topic = message["vehicle_id"]
         messageJson = json.dumps(message)
         myAWSIoTMQTTClient.publish(topic, messageJson, 0)
         if args.mode == 'publish':
