@@ -5,18 +5,23 @@ import json
 # Create random name for things
 import random
 import string
+import shutil
 
 # Parameters for Thing
-thingArn = ''
-thingId = ''
-thingName = ''.join(
-    [random.choice(string.ascii_letters + string.digits) for n in range(15)])
+# thingArn = ''
+# thingId = ''
+# thingName = ''.join(
+#     [random.choice(string.ascii_letters + string.digits) for n in range(15)])
 defaultPolicyName = 'lab4policy'
+thingClient = boto3.client('iot', region_name='us-east-1')
 ###################################################
 
 
-def createThing():
+def createThing(i):
     global thingClient
+    thingName = "device_{}".format(i)
+    # thingName = ''.join(
+    #     [random.choice(string.ascii_letters + string.digits) for n in range(15)])
     thingResponse = thingClient.create_thing(
         thingName=thingName
     )
@@ -26,11 +31,17 @@ def createThing():
             thingArn = data['thingArn']
         elif element == 'thingId':
             thingId = data['thingId']
-            createCertificate()
+    createCertificate(thingName, i)
+    return
 
 
-def createCertificate():
+def createCertificate(thingName, i):
     global thingClient
+    path = "certificates/device_{}/".format(i)
+    if os.path.exists(path):
+        shutil.rmtree(path, True)
+    os.makedirs(path)
+
     certResponse = thingClient.create_keys_and_certificate(
         setAsActive=True
     )
@@ -46,11 +57,24 @@ def createCertificate():
         elif element == 'certificateId':
             certificateId = data['certificateId']
 
-    with open('public.key', 'w') as outfile:
-        outfile.write(PublicKey)
-    with open('private.key', 'w') as outfile:
+    # dict = {
+    #     "ThingName": thingName,
+    #     "certificateArn": certificateArn,
+    #     "PublicKey": PublicKey,
+    #     "PrivateKey": PrivateKey,
+    #     "certificatePem": certificatePem,
+    #     "certificateId": certificateId
+    # }
+
+    # jsonName = "device_{}.json".format(i)
+    privateName = "device_{}.private.pem".format(i)
+    certName = "device_{}.certificate.pem".format(i)
+
+    # with open(path+jsonName, 'w') as outfile:
+    #     outfile.write(json.dumps(dict))
+    with open(path+privateName, 'w') as outfile:
         outfile.write(PrivateKey)
-    with open('cert.pem', 'w') as outfile:
+    with open(path+certName, 'w') as outfile:
         outfile.write(certificatePem)
 
     response = thingClient.attach_policy(
@@ -62,6 +86,14 @@ def createCertificate():
         principal=certificateArn
     )
 
+    response = thingClient.add_thing_to_thing_group(
+        thingGroupName="lab4group",
+        thingName=thingName
+    )
 
-thingClient = boto3.client('iot', region_name='us-east-1')
-createThing()
+    return
+
+
+if __name__ == "__main__":
+    for i in range(300):
+        createThing(i)
