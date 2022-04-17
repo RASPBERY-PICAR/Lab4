@@ -19,9 +19,9 @@ thingClient = boto3.client('iot', region_name='us-east-1')
 
 def createThing(i):
     global thingClient
-    thingName = "device_{}".format(i)
-    # thingName = ''.join(
-    #     [random.choice(string.ascii_letters + string.digits) for n in range(15)])
+    # thingName = "device_{}".format(i)
+    thingName = ''.join(
+        [random.choice(string.ascii_letters + string.digits) for n in range(15)])
     thingResponse = thingClient.create_thing(
         thingName=thingName
     )
