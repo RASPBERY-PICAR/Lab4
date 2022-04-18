@@ -1,3 +1,5 @@
 certificates
 lhn/certificates
 .DS_Store
+script/device
+script/groupCA

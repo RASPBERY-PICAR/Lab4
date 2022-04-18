@@ -33,11 +33,11 @@ AllowedActions = ['both', 'publish', 'subscribe']
 
 
 def customOnMessage(message):
-    print('Received message on topic %s: %s\n' %
+    print('\nReceived message on topic %s: %s\n' %
           (message.topic, message.payload))
 
 
-MAX_DISCOVERY_RETRIES = 10
+MAX_DISCOVERY_RETRIES = 1
 GROUP_CA_PATH = "./groupCA/"
 
 # Read in command-line parameters
@@ -100,7 +100,9 @@ if not os.path.isfile(privateKeyPath):
 
 # Configure logging
 logger = logging.getLogger("AWSIoTPythonSDK.core")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 streamHandler = logging.StreamHandler()
 formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -208,13 +210,18 @@ if args.mode == 'both' or args.mode == 'publish':
 
 loopCount = 0
 len = len(data_file)
+if args.mode == 'both' or args.mode == 'publish':
+    message = {"vehicle_id": data_file.loc[0].to_dict()["vehicle_id"],
+               "timestep_time": -1, "vehicle_CO2": 0}
+    messageJson = json.dumps(message)
+    myAWSIoTMQTTClient.publish(topic, messageJson, 0)
 while loopCount < len:
     if args.mode == 'both' or args.mode == 'publish':
         message = data_file.loc[loopCount].to_dict()
         # topic = message["vehicle_id"]
         messageJson = json.dumps(message)
         myAWSIoTMQTTClient.publish(topic, messageJson, 0)
-        if args.mode == 'publish':
-            print('Published topic %s: %s\n' % (topic, messageJson))
+        print('Published topic %s: [Messege Summary] time step: %d, CO2: %f' %
+              (topic, loopCount, message["vehicle_CO2"]))
         loopCount += 1
     time.sleep(1)
