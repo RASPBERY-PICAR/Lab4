@@ -9,7 +9,7 @@ import numpy as np
 # TODO 1: modify the following parameters
 # Starting and end index, modify this
 device_st = 0
-device_end = 100
+device_end = 10
 
 # Path to the dataset, modify this
 data_path = "data2/vehicle{}.csv"
@@ -81,7 +81,7 @@ while True:
     x = input()
     if x == "s":
         for i, c in enumerate(clients):
-            c.publish()
+            c.publish(Payload=str(i))
 
     elif x == "d":
         for c in clients:

@@ -200,6 +200,7 @@ if args.mode == 'both' or args.mode == 'subscribe':
     myAWSIoTMQTTClient.subscribe(topic, 0, None)
 time.sleep(2)
 
+# get the vehicle data from file
 if args.mode == 'both' or args.mode == 'publish':
     data_file = pd.read_csv(args.data)
 
@@ -210,18 +211,20 @@ if args.mode == 'both' or args.mode == 'publish':
 
 loopCount = 0
 len = len(data_file)
+# send init data
 if args.mode == 'both' or args.mode == 'publish':
     message = {"vehicle_id": data_file.loc[0].to_dict()["vehicle_id"],
                "timestep_time": -1, "vehicle_CO2": 0}
     messageJson = json.dumps(message)
     myAWSIoTMQTTClient.publish(topic, messageJson, 0)
+# send data row by row
 while loopCount < len:
     if args.mode == 'both' or args.mode == 'publish':
         message = data_file.loc[loopCount].to_dict()
         # topic = message["vehicle_id"]
         messageJson = json.dumps(message)
         myAWSIoTMQTTClient.publish(topic, messageJson, 0)
-        print('Published topic %s: [Messege Summary] time step: %d, CO2: %f' %
+        print('Published topic %s: [Messege Summary] time step: %d, CO2: %.2f' %
               (topic, loopCount, message["vehicle_CO2"]))
         loopCount += 1
     time.sleep(1)

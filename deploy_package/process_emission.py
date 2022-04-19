@@ -14,6 +14,7 @@ client = greengrasssdk.client("iot-data")
 # # Counter
 # my_counter = 0
 
+# global dict to store the current max CO2 value of every vehicle
 dict_CO2_MAX = {}
 
 
@@ -24,16 +25,25 @@ def lambda_handler(event, context):
     timestep = int(event["timestep_time"])
     ved_co2 = event["vehicle_CO2"]
 
+    # init data
     if (timestep == -1):
         dict_CO2_MAX[veh_id] = ved_co2
         return
+    # if data > 0, Send the results to IOT analytics for aggregation
+    if (ved_co2 > 0):
+        client.publish(
+            topic='CO2_analysis',
+            qos=0,
+            payload=json.dumps(
+                {"vehicle_ID": veh_id, "time_step": timestep, "CO2": ved_co2})
+        )
 
     # TODO2: Calculate max CO2 emission
     # if we have the record of id in dict, and current co2 < recorded MAX, do nothing
     if (veh_id in dict_CO2_MAX) and (ved_co2 < dict_CO2_MAX[veh_id]):
         return
 
-    # else, update reocrd and publish
+    # else, update record and publish
     dict_CO2_MAX[veh_id] = ved_co2
     print({"vehicle_ID": veh_id, "time_step": timestep, "CO2_MAX": ved_co2})
     # TODO3: Return the result
@@ -44,7 +54,7 @@ def lambda_handler(event, context):
         payload=json.dumps(
             {"vehicle_ID": veh_id, "time_step": timestep, "CO2_MAX": ved_co2})
     )
-    # Send the results to IOT analytics for aggregation
+    # Send the results(max values) to IOT core
     client.publish(
         topic='CO2_MAX',
         qos=1,
